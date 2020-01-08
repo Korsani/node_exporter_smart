@@ -1,17 +1,33 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Data::Dumper;
-# need lsblk for FreeBSD: https://raw.githubusercontent.com/vermaden/scripts/master/lsblk.sh
 open(L,'lsblk|') or die "$!";
 my %smart_g;
 my %smart_id;
 our $pref=shift;
-while(<L>) {
-	next unless $_=~/.*(disk|GPT).*/; # disk for linux, gpt for freebsd
-	my @a=split(/ +/);
-	my $dev='/dev/'.$a[0];
-	open(S,"/usr/sbin/smartctl -A $dev|") or die "$!";
+die "You must provide a prefix:  $0 <prefix>\n" if (not $pref);
+warn "This script should be run as root. Unexpected behaviours ahead...\n" if ($>);
+sub get_devices() {
+	my @devices;
+	if ($^O eq 'linux') {
+		open(L,'lsblk|') or die "$!";
+		while(<L>) {
+			next unless $_=~/.*disk.*/; # disk for linux, gpt for freebsd
+			my @a=split(/ +/);
+			push @devices,('/dev/'.$a[0]);
+		}
+	}
+	if ($^O eq 'freebsd') {
+		open(L,'geom disk list|') or die "$!";
+		while (<L>) {
+			next unless $_=~/.*Name: (.*)/; # disk for linux, gpt for freebsd
+			push @devices,('/dev/'.$1);
+		}
+	}
+	return @devices;
+}
+foreach my $dev (get_devices()) {
+	open(S,"smartctl -A $dev|") or die "$!";
 	my %smart;
 	while(<S>) {
 		next unless $_=~/.*0x00.*/;
@@ -27,3 +43,4 @@ while(<L>) {
 	$smart_g{$dev}=\%smart;
 }
 map { my $id=$_;printf '# TYPE %s_%s counter'."\n",$pref,$id;foreach my $dev (keys %smart_g) { printf '%s_%s{device="%s"} %d'."\n",$pref,$id,$dev,$smart_g{$dev}{$id} if exists $smart_g{$dev}{$id}; }} keys %smart_id;
+
