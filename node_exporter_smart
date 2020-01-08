@@ -1,0 +1,29 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use Data::Dumper;
+# need lsblk for FreeBSD: https://raw.githubusercontent.com/vermaden/scripts/master/lsblk.sh
+open(L,'lsblk|') or die "$!";
+my %smart_g;
+my %smart_id;
+our $pref=shift;
+while(<L>) {
+	next unless $_=~/.*(disk|GPT).*/; # disk for linux, gpt for freebsd
+	my @a=split(/ +/);
+	my $dev='/dev/'.$a[0];
+	open(S,"/usr/sbin/smartctl -A $dev|") or die "$!";
+	my %smart;
+	while(<S>) {
+		next unless $_=~/.*0x00.*/;
+		# Wipe leading numbers
+		$_=~s/....(.*)/$1/;
+		my @a=split(/ +/);chomp @a;
+		my $id=lc($a[0]);
+		# Prom doesn't like -
+		$id=~s/-/_/g;
+		$smart_id{$id}=1;
+		$smart{$id}=$a[8];
+	}
+	$smart_g{$dev}=\%smart;
+}
+map { my $id=$_;printf '# TYPE %s_%s counter'."\n",$pref,$id;foreach my $dev (keys %smart_g) { printf '%s_%s{device="%s"} %d'."\n",$pref,$id,$dev,$smart_g{$dev}{$id} if exists $smart_g{$dev}{$id}; }} keys %smart_id;
