@@ -3,9 +3,9 @@ This is a tiny perl script to gather SMART info feed prometheus textfile collect
 
 # Requirements
 
-`Perl`: should be available on your system
-`lsblk`: should be available on any GNU/Linux system. If you have FreeBSD, please use [this](https://raw.githubusercontent.com/vermaden/scripts/master/lsblk.sh).
-`smartctl`: should be instalable via `apt install smartmontools`, `emerge smartmontools`, `pacman -S smartmontools`, ...
+- `perl`: should be available on your system
+- `lsblk`: should be available on any GNU/Linux system. If you have FreeBSD, please use [this](https://raw.githubusercontent.com/vermaden/scripts/master/lsblk.sh).
+- `smartctl`: should be instalable via `apt install smartmontools`, `emerge smartmontools`, `pacman -S smartmontools`, ...
 
 # Usage
 
