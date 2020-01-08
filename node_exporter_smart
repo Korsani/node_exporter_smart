@@ -4,9 +4,14 @@ use warnings;
 open(L,'lsblk|') or die "$!";
 my %smart_g;
 my %smart_id;
+my $smartctl;
 our $pref=shift;
 die "You must provide a prefix:  $0 <prefix>\n" if (not $pref);
 warn "This script should be run as root. Unexpected behaviours ahead...\n" if ($>);
+foreach my $dir ('/usr/sbin/','/usr/local/sbin') {
+	$smartctl=$dir.'/smartctl' if -e $dir.'/smartctl';
+}
+die "smartctl not found\n" if (not $smartctl);
 sub get_devices() {
 	my @devices;
 	if ($^O eq 'linux') {
@@ -27,7 +32,7 @@ sub get_devices() {
 	return @devices;
 }
 foreach my $dev (get_devices()) {
-	open(S,"smartctl -A $dev|") or die "$!";
+	open(S,"$smartctl -A $dev|") or die "$!";
 	my %smart;
 	while(<S>) {
 		next unless $_=~/.*0x00.*/;
